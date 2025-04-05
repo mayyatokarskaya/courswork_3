@@ -3,7 +3,6 @@ from settings.config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
 
 
 class DBManager:
-    """Класс для управления подключением и выполнением операций с базой данных"""
     def __init__(self):
         try:
             self.conn = psycopg2.connect(

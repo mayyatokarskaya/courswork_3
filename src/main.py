@@ -21,13 +21,6 @@ def main():
         else:
             print(f"Список вакансий для компании с id {company['id']} пуст.")
 
-    # Пример работы с данными
-    print(db_manager.get_companies_and_vacancies_count())
-    print(db_manager.get_all_vacancies())
-    print(db_manager.get_avg_salary())
-    print(db_manager.get_vacancies_with_higher_salary())
-    print(db_manager.get_vacancies_with_keyword("Python"))
-
     db_manager.close()
 
 
