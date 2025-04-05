@@ -26,7 +26,7 @@ def get_vacancies(employer_id: str) -> List[Dict]:
     url = f"{HH_API_URL}/vacancies"
     params = {
         "employer_id": employer_id,
-        "per_page": 100  # Получаем до 100 вакансий за один запрос
+        "per_page": 100,  # Получаем до 100 вакансий за один запрос
     }
     response = requests.get(url, params=params)
 
