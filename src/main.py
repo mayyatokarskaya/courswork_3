@@ -1,9 +1,12 @@
+from db_init import create_database_if_not_exists
 from db_manager import DBManager
 from api import get_companies, get_vacancies
 
 
 def main():
     # Создание базы данных и таблиц
+    create_database_if_not_exists()
+
     db_manager = DBManager()
     db_manager.create_tables()
 
