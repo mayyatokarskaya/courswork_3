@@ -10,6 +10,7 @@ python = "^3.11"
 dotenv = "^0.9.9"
 python-dotenv = "^1.1.0"
 requests = "^2.32.3"
+psycopg2 = "^2.9.10"
 
 
 [tool.poetry.group.lint.dependencies]
