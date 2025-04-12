@@ -31,16 +31,16 @@ def get_vacancies(employer_id: str) -> List[Dict]:
     response = requests.get(url, params=params)
 
     if response.status_code != 200:
-        print(f" Не удалось получить вакансии для компании с id {employer_id}")
+        print(f"Не удалось получить вакансии для компании с id {employer_id}")
         return []
 
     vacancies = response.json().get("items", [])
+    print(f"Полученные вакансии для компании {employer_id}: {vacancies}")  # Добавь отладочный вывод
 
     if not vacancies:
         print(f"Список вакансий для компании с id {employer_id} пуст.")
 
     return vacancies
-
 
 # Получение информации о компании
 def get_employer_info(employer_id: str) -> Dict:

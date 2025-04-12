@@ -114,7 +114,9 @@ class DBManager:
                 JOIN companies ON vacancies.company_id = companies.company_id;
                 """
             )
-            return self.cur.fetchall()
+            result = self.cur.fetchall()
+            print(f"Найдено {len(result)} вакансий.")  # Добавим отладочный вывод
+            return result
         except Exception as e:
             print(f"Ошибка при получении вакансий: {e}")
             return []
