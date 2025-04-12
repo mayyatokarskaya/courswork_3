@@ -26,7 +26,7 @@ def get_vacancies(employer_id: str) -> List[Dict]:
     url = f"{HH_API_URL}/vacancies"
     params = {
         "employer_id": employer_id,
-        "per_page": 100,  # Получаем до 100 вакансий за один запрос
+        "per_page": 100,  # Получаем до 100 вакансий
     }
     response = requests.get(url, params=params)
 
@@ -35,12 +35,14 @@ def get_vacancies(employer_id: str) -> List[Dict]:
         return []
 
     vacancies = response.json().get("items", [])
-    print(f"Полученные вакансии для компании {employer_id}: {vacancies}")  # Добавь отладочный вывод
+    print(f"Полученные вакансии: {vacancies}")  # Добавим вывод
 
     if not vacancies:
         print(f"Список вакансий для компании с id {employer_id} пуст.")
 
     return vacancies
+
+
 
 # Получение информации о компании
 def get_employer_info(employer_id: str) -> Dict:

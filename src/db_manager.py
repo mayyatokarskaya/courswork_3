@@ -1,5 +1,6 @@
 import psycopg2
 from settings.config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
+from src.api import get_vacancies
 
 
 class DBManager:
@@ -27,7 +28,9 @@ class DBManager:
                 CREATE TABLE IF NOT EXISTS companies (
                     company_id SERIAL PRIMARY KEY,
                     name TEXT NOT NULL,
-                    hh_id INTEGER UNIQUE NOT NULL
+                    hh_id INTEGER UNIQUE NOT NULL,
+                    logo TEXT,
+                    description TEXT
                 );
                 """
             )
@@ -41,7 +44,9 @@ class DBManager:
                     title TEXT NOT NULL,
                     salary_from INTEGER,
                     salary_to INTEGER,
-                    url TEXT NOT NULL
+                    url TEXT NOT NULL,
+                    description TEXT,
+                    published_at TIMESTAMP
                 );
                 """
             )
@@ -52,7 +57,7 @@ class DBManager:
             self.conn.rollback()
 
     def add_company(self, company):
-        """Добавление компании в таблицу companies."""
+        """Добавление компании в таблицу companies и возврат company_id."""
         try:
             self.cur.execute(
                 """
@@ -63,18 +68,44 @@ class DBManager:
                 (company["name"], company["id"]),
             )
             self.conn.commit()
-            print(f"Компания {company['name']} успешно добавлена.")
+
+            # Получаем company_id компании
+            self.cur.execute(
+                """
+                SELECT company_id FROM companies WHERE hh_id = %s;
+                """,
+                (company["id"],)
+            )
+            company_id = self.cur.fetchone()[0]
+            print(f"Компания {company['name']} успешно добавлена с company_id = {company_id}.")
+            return company_id
         except Exception as e:
             print(f"Ошибка при добавлении компании: {e}")
             self.conn.rollback()
 
-    def add_vacancy(self, vacancy, company_id):
+    def add_vacancy(self, vacancy, hh_id):
         """Добавление вакансии в таблицу vacancies."""
         try:
+            # Находим company_id по hh_id
             self.cur.execute(
                 """
-                INSERT INTO vacancies (company_id, title, salary_from, salary_to, url)
-                VALUES (%s, %s, %s, %s, %s);
+                SELECT company_id FROM companies WHERE hh_id = %s;
+                """,
+                (hh_id,)
+            )
+            company_id = self.cur.fetchone()
+
+            if not company_id:
+                print(f"Компания с hh_id = {hh_id} не найдена.")
+                return
+
+            company_id = company_id[0]  # Получаем company_id
+
+            # Вставляем вакансию в таблицу vacancies
+            self.cur.execute(
+                """
+                INSERT INTO vacancies (company_id, title, salary_from, salary_to, url, description, published_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s);
                 """,
                 (
                     company_id,
@@ -82,6 +113,8 @@ class DBManager:
                     vacancy["salary"]["from"] if vacancy["salary"] else None,
                     vacancy["salary"]["to"] if vacancy["salary"] else None,
                     vacancy["alternate_url"],
+                    vacancy.get("description", None),
+                    vacancy.get("published_at", None),
                 ),
             )
             self.conn.commit()
@@ -89,6 +122,19 @@ class DBManager:
         except Exception as e:
             print(f"Ошибка при добавлении вакансии: {e}")
             self.conn.rollback()
+
+    def add_vacancies_to_db(companies, db_manager):
+        """Добавление вакансий для всех компаний в базу данных."""
+        for company in companies:
+            # Добавляем компанию в базу и получаем company_id
+            company_id = db_manager.add_company(company)
+
+            # Получаем вакансии для компании (метод get_vacancies должен извлекать вакансии по ID компании)
+            vacancies = get_vacancies(company["id"])
+
+            # Добавляем вакансии в базу данных, передавая hh_id вместо company_id
+            for vacancy in vacancies:
+                db_manager.add_vacancy(vacancy, company["id"])
 
     def get_companies_and_vacancies_count(self):
         try:
