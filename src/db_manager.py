@@ -171,14 +171,15 @@ class DBManager:
         try:
             self.cur.execute(
                 """
-                SELECT AVG((COALESCE(salary_from, 0) + COALESCE(salary_to, 0))/2)
+                SELECT ROUND(AVG(COALESCE(salary_from, salary_to)))
                 FROM vacancies
-                WHERE salary_from IS NOT NULL AND salary_to IS NOT NULL;
+                WHERE salary_from IS NOT NULL OR salary_to IS NOT NULL;
                 """
             )
             return self.cur.fetchone()[0]
         except Exception as e:
             print(f"Ошибка при расчете средней зарплаты: {e}")
+
             return 0
 
     def get_vacancies_with_higher_salary(self):
@@ -188,9 +189,12 @@ class DBManager:
                 """
                 SELECT title, salary_from, salary_to, url
                 FROM vacancies
-                WHERE ((COALESCE(salary_from, 0) + COALESCE(salary_to, 0))/2) > %s;
+                WHERE (
+                    (salary_from IS NOT NULL AND salary_from > %s) OR
+                    (salary_to IS NOT NULL AND salary_to > %s)
+                );
                 """,
-                (avg_salary,),
+                (avg_salary, avg_salary),
             )
             return self.cur.fetchall()
         except Exception as e:
