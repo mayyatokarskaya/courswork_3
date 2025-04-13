@@ -1,5 +1,5 @@
-from db_manager import DBManager
 from api import get_companies, get_vacancies
+from db_manager import DBManager
 
 
 def setup_database():

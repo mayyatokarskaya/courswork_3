@@ -1,10 +1,21 @@
 import psycopg2
-from settings.config import DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT
+from typing import List, Tuple, Optional, Dict, Any
+from database import get_db_connection
+from settings.config import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 from src.api import get_vacancies
 
 
 class DBManager:
-    def __init__(self):
+    """Класс для управления взаимодействием с базой данных вакансий."""
+
+    def __init__(self) -> None:
+        """
+        Инициализирует соединение с базой данных.
+
+        Raises:
+            psycopg2.OperationalError: Если не удается подключиться к БД
+        """
+        self.conn = get_db_connection()
         try:
             self.conn = psycopg2.connect(
                 dbname=DB_NAME,
@@ -19,8 +30,13 @@ class DBManager:
             print(f"Ошибка подключения к базе данных: {e}")
             raise
 
-    def create_tables(self):
-        """Создание таблиц в базе данных PostgreSQL."""
+    def create_tables(self) -> None:
+        """
+        Создает таблицы companies и vacancies в базе данных.
+
+        Raises:
+            psycopg2.Error: При ошибках выполнения SQL-запросов
+        """
         try:
             # Таблица компаний
             self.cur.execute(
@@ -56,8 +72,19 @@ class DBManager:
             print(f"Ошибка при создании таблиц: {e}")
             self.conn.rollback()
 
-    def add_company(self, company):
-        """Добавление компании в таблицу companies и возврат company_id."""
+    def add_company(self, company: Dict[str, Any]) -> Optional[int]:
+        """
+        Добавляет компанию в таблицу companies.
+
+        Args:
+            company: Словарь с данными компании (должен содержать ключи 'name' и 'id')
+
+        Returns:
+            ID добавленной компании или None при ошибке
+
+        Raises:
+            psycopg2.Error: При ошибках выполнения SQL-запросов
+        """
         try:
             self.cur.execute(
                 """
@@ -74,24 +101,37 @@ class DBManager:
                 """
                 SELECT company_id FROM companies WHERE hh_id = %s;
                 """,
-                (company["id"],)
+                (company["id"],),
             )
             company_id = self.cur.fetchone()[0]
-            print(f"Компания {company['name']} успешно добавлена с company_id = {company_id}.")
+            print(
+                f"Компания {company['name']} успешно добавлена с company_id = {company_id}."
+            )
             return company_id
         except Exception as e:
             print(f"Ошибка при добавлении компании: {e}")
             self.conn.rollback()
+            return None
 
-    def add_vacancy(self, vacancy, hh_id):
-        """Добавление вакансии в таблицу vacancies."""
+    def add_vacancy(self, vacancy: Dict[str, Any], hh_id: int) -> None:
+        """
+        Добавляет вакансию в таблицу vacancies.
+
+        Args:
+            vacancy: Словарь с данными вакансии
+            hh_id: Идентификатор работодателя на HeadHunter
+
+        Raises:
+            psycopg2.Error: При ошибках выполнения SQL-запросов
+            ValueError: Если компания с указанным hh_id не найдена
+        """
         try:
             # Находим company_id по hh_id
             self.cur.execute(
                 """
                 SELECT company_id FROM companies WHERE hh_id = %s;
                 """,
-                (hh_id,)
+                (hh_id,),
             )
             company_id = self.cur.fetchone()
 
@@ -123,20 +163,36 @@ class DBManager:
             print(f"Ошибка при добавлении вакансии: {e}")
             self.conn.rollback()
 
-    def add_vacancies_to_db(companies, db_manager):
-        """Добавление вакансий для всех компаний в базу данных."""
+    @staticmethod
+    def add_vacancies_to_db(companies: List[Dict[str, Any]], db_manager: 'DBManager') -> None:
+        """
+        Добавляет вакансии для всех компаний в базу данных.
+
+        Args:
+            companies: Список компаний
+            db_manager: Экземпляр DBManager
+
+        Raises:
+            Exception: При ошибках в процессе добавления данных
+        """
         for company in companies:
             # Добавляем компанию в базу и получаем company_id
             company_id = db_manager.add_company(company)
 
-            # Получаем вакансии для компании (метод get_vacancies должен извлекать вакансии по ID компании)
+            # Получаем вакансии для компании
             vacancies = get_vacancies(company["id"])
 
             # Добавляем вакансии в базу данных, передавая hh_id вместо company_id
             for vacancy in vacancies:
                 db_manager.add_vacancy(vacancy, company["id"])
 
-    def get_companies_and_vacancies_count(self):
+    def get_companies_and_vacancies_count(self) -> List[Tuple[str, int]]:
+        """
+        Получает список компаний с количеством их вакансий.
+
+        Returns:
+            Список кортежей (название компании, количество вакансий)
+        """
         try:
             self.cur.execute(
                 """
@@ -151,7 +207,14 @@ class DBManager:
             print(f"Ошибка при получении данных: {e}")
             return []
 
-    def get_all_vacancies(self):
+    def get_all_vacancies(self) -> List[Tuple[str, str, Optional[int], Optional[int], str]]:
+        """
+        Получает список всех вакансий.
+
+        Returns:
+            Список кортежей с информацией о вакансиях:
+            (название компании, название вакансии, зарплата от, зарплата до, URL)
+        """
         try:
             self.cur.execute(
                 """
@@ -161,13 +224,19 @@ class DBManager:
                 """
             )
             result = self.cur.fetchall()
-            print(f"Найдено {len(result)} вакансий.")  # Добавим отладочный вывод
+            print(f"Найдено {len(result)} вакансий.")
             return result
         except Exception as e:
             print(f"Ошибка при получении вакансий: {e}")
             return []
 
-    def get_avg_salary(self):
+    def get_avg_salary(self) -> float:
+        """
+        Рассчитывает среднюю зарплату по всем вакансиям.
+
+        Returns:
+            Средняя зарплата (округленная)
+        """
         try:
             self.cur.execute(
                 """
@@ -179,10 +248,16 @@ class DBManager:
             return self.cur.fetchone()[0]
         except Exception as e:
             print(f"Ошибка при расчете средней зарплаты: {e}")
-
             return 0
 
-    def get_vacancies_with_higher_salary(self):
+    def get_vacancies_with_higher_salary(self) -> List[Tuple[str, Optional[int], Optional[int], str]]:
+        """
+        Получает вакансии с зарплатой выше средней.
+
+        Returns:
+            Список кортежей с информацией о вакансиях:
+            (название вакансии, зарплата от, зарплата до, URL)
+        """
         avg_salary = self.get_avg_salary()
         try:
             self.cur.execute(
@@ -201,7 +276,17 @@ class DBManager:
             print(f"Ошибка при получении вакансий с зарплатой выше средней: {e}")
             return []
 
-    def get_vacancies_with_keyword(self, keyword: str):
+    def get_vacancies_with_keyword(self, keyword: str) -> List[Tuple[str, Optional[int], Optional[int], str]]:
+        """
+        Ищет вакансии по ключевому слову в названии.
+
+        Args:
+            keyword: Ключевое слово для поиска
+
+        Returns:
+            Список кортежей с информацией о найденных вакансиях:
+            (название вакансии, зарплата от, зарплата до, URL)
+        """
         try:
             self.cur.execute(
                 """
@@ -216,7 +301,8 @@ class DBManager:
             print(f"Ошибка при поиске вакансий по ключевому слову '{keyword}': {e}")
             return []
 
-    def close(self):
+    def close(self) -> None:
+        """Закрывает соединение с базой данных."""
         try:
             self.cur.close()
             self.conn.close()

@@ -1,5 +1,6 @@
+from typing import Dict, List
+
 import requests
-from typing import List, Dict
 
 HH_API_URL = "https://api.hh.ru"
 
@@ -41,7 +42,6 @@ def get_vacancies(employer_id: str) -> List[Dict]:
         print(f"Список вакансий для компании с id {employer_id} пуст.")
 
     return vacancies
-
 
 
 # Получение информации о компании
