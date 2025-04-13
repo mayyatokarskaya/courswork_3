@@ -1,5 +1,7 @@
+from typing import Any, Dict, List, Optional, Tuple
+
 import psycopg2
-from typing import List, Tuple, Optional, Dict, Any
+
 from database import get_db_connection
 from settings.config import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 from src.api import get_vacancies
@@ -164,7 +166,9 @@ class DBManager:
             self.conn.rollback()
 
     @staticmethod
-    def add_vacancies_to_db(companies: List[Dict[str, Any]], db_manager: 'DBManager') -> None:
+    def add_vacancies_to_db(
+        companies: List[Dict[str, Any]], db_manager: "DBManager"
+    ) -> None:
         """
         Добавляет вакансии для всех компаний в базу данных.
 
@@ -207,7 +211,9 @@ class DBManager:
             print(f"Ошибка при получении данных: {e}")
             return []
 
-    def get_all_vacancies(self) -> List[Tuple[str, str, Optional[int], Optional[int], str]]:
+    def get_all_vacancies(
+        self,
+    ) -> List[Tuple[str, str, Optional[int], Optional[int], str]]:
         """
         Получает список всех вакансий.
 
@@ -250,7 +256,9 @@ class DBManager:
             print(f"Ошибка при расчете средней зарплаты: {e}")
             return 0
 
-    def get_vacancies_with_higher_salary(self) -> List[Tuple[str, Optional[int], Optional[int], str]]:
+    def get_vacancies_with_higher_salary(
+        self,
+    ) -> List[Tuple[str, Optional[int], Optional[int], str]]:
         """
         Получает вакансии с зарплатой выше средней.
 
@@ -276,7 +284,9 @@ class DBManager:
             print(f"Ошибка при получении вакансий с зарплатой выше средней: {e}")
             return []
 
-    def get_vacancies_with_keyword(self, keyword: str) -> List[Tuple[str, Optional[int], Optional[int], str]]:
+    def get_vacancies_with_keyword(
+        self, keyword: str
+    ) -> List[Tuple[str, Optional[int], Optional[int], str]]:
         """
         Ищет вакансии по ключевому слову в названии.
 

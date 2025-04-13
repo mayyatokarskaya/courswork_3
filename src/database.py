@@ -1,6 +1,8 @@
+from typing import List
+
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-from typing import List, Optional, Tuple, Any
+
 from settings.config import DB_HOST, DB_NAME, DB_PASSWORD, DB_PORT, DB_USER
 from src.api import get_employer_info, get_vacancies
 
